@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from typing import List
 import json
 
@@ -13,7 +13,7 @@ def load_marks():
     return marks_dict
 
 @app.get("/api")
-async def get_marks(name: List[str]):
+async def get_marks(name: List[str] = Query(...)):
     marks = load_marks()  # Load the marks data
     result = {"marks": [marks.get(n, "Not Found") for n in name]}  # Fetch marks for given names
     return result
