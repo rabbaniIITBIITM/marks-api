@@ -1,28 +1,34 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import json
+from urllib.parse import urlparse, parse_qs
+from http.server import BaseHTTPRequestHandler
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
 
-# Load the marks data from marks.json
-with open('marks.json') as f:
-    marks_data = json.load(f)
+# Load the marks data
+with open("marks.json", "r") as f:
+    data = json.load(f)  # List of dictionaries
 
-@app.route('/', methods=['GET'])
-def get_marks():
-    # Extract names from query parameters
-    names = request.args.getlist('name')
-    
-    # Filter and maintain original order
-    filtered_students = [s for s in marks_data if s["name"] in names]
-    
-    # Create response with marks in original CSV order
-    response = {
-        "marks": [student["marks"] for student in filtered_students]
-    }
-    
-    return jsonify(response)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+class handler(BaseHTTPRequestHandler):	
+    def do_GET(self):
+        # Parse query parameters
+        query = urlparse(self.path).query
+        params = parse_qs(query)
+        names = params.get("name", [])  # List of requested names
+
+
+        # Search for names in the data
+        result = []
+        for name in names:
+            match = next((item["marks"] for item in data if item["name"] == name), "Not Found")
+            result.append(match)
+
+
+        # Enable CORS
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+
+        # Send the JSON response
+        self.wfile.write(json.dumps({"marks": result}).encode("utf-8"))
